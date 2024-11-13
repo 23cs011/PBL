@@ -29,7 +29,7 @@ public class NotesApp extends JFrame {
         gradientPanel.setLayout(new BorderLayout());
 
         JPanel inputPanel = new JPanel();
-        inputPanel.setLayout(new GridLayout(3, 1));
+        inputPanel.setLayout(new GridLayout(4, 1));
 
         titleField = new JTextField();
         inputPanel.add(new JLabel("Title:"));
@@ -47,7 +47,16 @@ public class NotesApp extends JFrame {
             }
         });
 
+        JButton deleteButton = new JButton("Delete Note");
+        deleteButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                deleteNote();
+            }
+        });
+
         inputPanel.add(addButton);
+        inputPanel.add(deleteButton);
         gradientPanel.add(inputPanel, BorderLayout.NORTH);
 
         tableModel = new DefaultTableModel(new String[] { "ID", "Title", "Description" }, 0);
@@ -91,9 +100,30 @@ public class NotesApp extends JFrame {
             pstmt.setString(1, title);
             pstmt.setString(2, description);
             pstmt.executeUpdate();
-            loadNotes(); // Refresh the table
+            loadNotes();
             titleField.setText("");
             descriptionArea.setText("");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void deleteNote() {
+        int selectedRow = notesTable.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a note to delete.");
+            return;
+        }
+
+        int noteId = (int) tableModel.getValueAt(selectedRow, 0);
+
+        String query = "DELETE FROM notes WHERE id = ?";
+        try (Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+                PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+            pstmt.setInt(1, noteId);
+            pstmt.executeUpdate();
+            loadNotes();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -113,10 +143,10 @@ public class NotesApp extends JFrame {
             Graphics2D g2d = (Graphics2D) g;
             int width = getWidth();
             int height = getHeight();
-    
+
             Color startColor = new Color(173, 216, 230);
             Color endColor = new Color(70, 130, 180);
-    
+
             GradientPaint gradientPaint = new GradientPaint(0, 0, startColor, 0, height, endColor);
             g2d.setPaint(gradientPaint);
             g2d.fillRect(0, 0, width, height);
